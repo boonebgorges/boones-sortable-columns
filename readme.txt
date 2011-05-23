@@ -3,6 +3,7 @@ Contributors: boonebgorges
 Tags: columns, tables, custom post types
 Requires at least: WordPress 3.1
 Tested up to: WordPress 3.2-beta
+Donate link: http://teleogistic.net/donate
 Stable tag: 1.0
 
 A handy, extensible class for adding sortable columns your custom post type lists.
@@ -12,21 +13,47 @@ A handy, extensible class for adding sortable columns your custom post type list
 Here's how I recommend using the class.
 
 1. Either activate this plugin, or include the class in your own plugin file.
-1. When you start to render the page with the post list, instantiate the pagination class:
-`$pagination = new BBG_CPT_Pag;`
-1. When constructing your query arguments (for query_posts() or WP_Query), you can use the class to get your pagination arguments out of the $_GET parameters. For instance:
-`$args = array(
-...
-'posts_per_page' => $pagination->get_per_page,
-'paged' => $pagination->get_paged
-...
+2. When you start to render the page with the post list, define some columns and then instantiate the class:
+`$cols = array(
+	array(
+		'name'		=> 'restaurant_name',
+		'title'		=> 'Restaurant Name',
+		'css_class'	=> 'restaurant-name',
+		'is_default'	=> true
+	),
+	array(
+		'name'		=> 'cuisine_type',
+		'title'		=> 'Cuisine Type',
+		'css_class'	=> 'cuisine-type',
+		'default_order' => 'desc'
+	)
 );
-query_posts( $args );`
-1. After firing the query, use the `setup_query()` method to populate the rest of the class. If you used `query_posts()`, you don't need an argument:
-`$pagination->setup_query();`
-If you use `new WP_Query`, you'll have to pass the query object:
-`$my_query = new WP_Query;
-$pagination->setup_query( $my_query );`
-1. Then you can use all sorts of fun methods, like
-`$pagination->paginate_links();
-$pagination->currently_viewing_text();`
+$sortable = new BBG_CPT_Sort( $cols );`
+3. As you render your table, you can use all sorts of fun methods to create column headers. Example:
+`<table class="widefat">
+	<thead>
+	<?php if ( $sortable->have_columns() ) : ?>
+		<?php while ( $sortable->have_columns() ) : $sortable->the_column() ?>
+			<th class="<?php $sortable->the_column_css_class() ?>">
+				<a href="<?php $sortable->the_column_next_link( 'url' ) ?>"><?php $sortable->the_column_title() ?></a>
+			</th>
+		<?php endwhile ?>
+	<?php endif ?>
+	</thead>
+	
+	<tbody>
+	...
+	</tbody>
+
+</table>`
+
+== Installation ==
+Two choices:
+1. Install from the plugins repository and activate for use in your theme
+or 
+2. Copy the BBG_CPT_Sort class into your own plugin/theme and require it manually.
+
+== Changelog == 
+
+= 1.0 =
+* Initial release
