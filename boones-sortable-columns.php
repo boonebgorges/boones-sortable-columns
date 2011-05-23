@@ -3,7 +3,7 @@
 /*
 Plugin Name: Boone's Sortable Columns
 Plugin URI: http://github.com/boonebgorges/boones-sortable-columns
-Description: A handy, extensible sortable tables class for WordPress custom post type lists
+Description: A handy, extensible sortable tables class for WordPress custom post type lists (or other kinds of content)
 Version: 1.0
 Author: Boone B Gorges
 Author URI: http://boonebgorges.com
@@ -63,6 +63,37 @@ class BBG_CPT_Sort {
 	 * $defaults below for an explanation of these arrays.
 	 */	
 	function __construct( $cols = false ) {
+		
+		/**
+		 * This defines the default values for *each column*. Please note that the $cols
+		 * param for this method is an array of arrays like this.
+		 *
+		 * Values:
+		 *   - 'name'	The unique identifier of the column, also used (for the time being)
+		 *		as the key for the URL param (eg &orderby=name). When possible, it's
+		 *		handy to use the same orderby param that you use when constructing
+		 *		the posts query. So, for example, you might use 'author' or 'date'.
+		 *		If you don't do this (or can't, because it's not a column natively
+		 * 		understood by WP_Query, or because you're not sorting a WP_Query)
+		 *		you'll have to do some translation between this 'name' value and
+		 *		your actual sorting code, whatever it is.
+		 *   - 'title'	The text that will be used to create the column header. 
+		 *   - 'is_sortable' True if you want the column to be sortable, false if not
+		 *   - 'css_class' This object will create a CSS selector that is tailored for use 
+		 *		in <th> elements of WP Dashboard 'widefat' tables. That complex CSS
+		 *		selector will automatically contain classes like 'sortable' and
+		 *		'asc', depending on the parameters and on your current page.
+		 *		css_class is an additional class that will be added to the selector
+		 *		so that you can do column-specific styling. If you don't provide
+		 *		a css_class, it'll default to the 'name' parameter.
+		 *   - 'default_order' Accepts 'asc' or 'desc'. Usually you'll want 'asc', except
+		 *		for date-based columns, when it generally makes sense for the
+		 *		most recent columns to be listed first.
+		 *   - 'posts_column' Right now this does nothing :)
+		 *   - 'is_default' True if you want the given column to be the default sort order.
+		 *		If more than one of your columns have 'is_default' set to true, the
+		 *		last one will take precedence.
+		 */
 		$defaults = array(
 			'name'		=> false,
 			'title'		=> false,
@@ -149,7 +180,9 @@ class BBG_CPT_Sort {
 	/**
 	 * Gets params out of $_GET global
 	 *
-	 * Does some basic checks to ensure that the values are integers and that they are non-empty
+	 * Does some basic sanity checks on the orderby and order parameters, ensuring that the
+	 * 'order' param is either 'asc' or 'desc', and that the 'orderby' param actually matches
+	 * one of the columns fed to the constructor.
 	 *
 	 * @package Boone's Sortable Columns
 	 * @since 1.0
@@ -176,6 +209,7 @@ class BBG_CPT_Sort {
 		} else {
 			// Loop through to find the default order for this bad boy
 			// This is not optimized because of the way the array is keyed
+			// Cry me a river why don't you
 			foreach( $this->columns as $col ) {
 				if ( $col->name == $this->get_orderby ) {	
 					$order = $col->default_order;
@@ -191,6 +225,20 @@ class BBG_CPT_Sort {
 		$this->get_order = $order;
 	}
 	
+	/**
+	 * Loops through the columns and determines what the next_order should be
+	 *
+	 * In other words: when you are currently sorting by (for example) post_date ASC, the
+	 * next_order for the post_date column should be DESC. For all columns that are not the
+	 * current sort order, the next_order should be the default_order of that column.
+	 *
+	 * The next_order values are used to create the href of the column header links, as well
+	 * as the CSS selectors 'asc' and 'desc' that the WP admin CSS/JS need to do fancy schmancy
+	 * mouseovers.
+	 *
+	 * @package Boone's Sortable Columns
+	 * @since 1.0
+	 */
 	function setup_next_orders() {
 		foreach( $this->columns as $name => $col ) {
 			if ( $col->name == $this->get_orderby ) {
@@ -204,6 +252,20 @@ class BBG_CPT_Sort {
 		}
 	}
 	
+	/**
+	 * Part of the Loop
+	 *
+	 * As in the regular WP post Loop, you can loop through the columns like so:
+	 *   $sortable = new BBG_CPT_Sort( $cols );
+	 *   if ( $sortable->have_columns() ) {
+	 *      while ( $sortable->have_columns() ) {
+	 *         $sortable->the_column();
+	 *      }
+	 *    }
+	 *
+	 * @package Boone's Sortable Columns
+	 * @since 1.0
+	 */
 	function have_columns() {
 		// Compare against the column_count - 1 to account for the 0 array index shift
 		if ( $this->column_count && $this->current_column < $this->column_count - 1 )
@@ -212,6 +274,12 @@ class BBG_CPT_Sort {
 		return false;
 	}
 
+	/**
+	 * Part of the Loop
+	 *
+	 * @package Boone's Sortable Columns
+	 * @since 1.0
+	 */
 	function next_column() {
 		$this->current_column++;
 		$this->column = $this->columns[$this->current_column];
@@ -219,6 +287,12 @@ class BBG_CPT_Sort {
 		return $this->column;
 	}
 
+	/**
+	 * Part of the Loop
+	 *
+	 * @package Boone's Sortable Columns
+	 * @since 1.0
+	 */
 	function rewind_columns() {
 		$this->current_column = -1;
 		if ( $this->column_count > 0 ) {
@@ -226,6 +300,12 @@ class BBG_CPT_Sort {
 		}
 	}
 
+	/**
+	 * Part of the Loop
+	 *
+	 * @package Boone's Sortable Columns
+	 * @since 1.0
+	 */
 	function the_column() {
 		$this->in_the_loop = true;
 		$this->column = $this->next_column();
@@ -234,6 +314,24 @@ class BBG_CPT_Sort {
 			do_action('loop_start');
 	}
 	
+	/**
+	 * Constructs a complex CSS selector for the column header
+	 *
+	 * This set of CSS classes is designed to work seamlessly with WP's admin CSS and JS for
+	 * <th> elements inside of <table class="widefat">. With just a bit of custom CSS and JS,
+	 * though, the same class can work well on the front end as well.
+	 *
+	 * The following classes are created, as appropriate:
+	 *   - 'sortable' / 'sorted'
+	 *   - 'asc' / 'desc'
+	 *   - the custom css_class fed to BBG_CPT_Sort::__construct()
+	 *
+	 * @package Boone's Sortable Columns
+	 * @since 1.0
+	 *
+	 * @param str $type 'echo' if you want the result echo, 'return' if you want it returned
+	 * @return str $class The CSS classes, separated by spaces
+	 */
 	function the_column_css_class( $type = 'echo' ) {
 		// The column-identifying class
 		$class = array( $this->column->css_class );
@@ -258,6 +356,47 @@ class BBG_CPT_Sort {
 			return $class;
 	}
 	
+	/**
+	 * Constructs the href URL for the column header
+	 *
+	 * This method is really the raison d'être of Boone's Sortable Columns, so make sure you
+	 * read this docblock carefully.
+	 *
+	 * Sortable columns work by turning each column header into a link that, when clicked, will
+	 * return new results that are sorted based on your requests. Making the URLs for those
+	 * links can be complex, however. This method will do all the heavy lifting for you, 
+	 * producing a URL or an entire anchor tag that you can use as the column header.
+	 *
+	 * For example, let's say your current URL is http://example.com/restaurants, which displays
+	 * a list of restaurants which are, by default, sorted by restaurant name, in ascending
+	 * alphabetical order. The column header for the Restaurant Name column should be a link
+	 * to sort the list by restaurant name in *descending* alphabetical order, while, for
+	 * example, the Cuisine column should be a link to sort the list by cuisine type, in 
+	 * ascending order. Accordingly (assuming you've instantiated the class properly; see
+	 * readme.txt for more instructions), the following lines of code
+	 * 
+	 *   <?php if ( $sortable->have_columns() ) : ?> 
+	 *      <?php while ( $sortable->have_columns() ) : $sortable->the_column() ?>
+	 *	   <?php $sortable->the_column_next_link() ?>
+	 *	<?php endwhile ?>
+	 *   <?php endif ?>
+	 * 
+	 * will output the following HTML:
+	 *
+	 *   <a href="http://example.com/restaurants?orderby=restaurant_name&order=desc">Restaurant
+	 *   Name</a>
+	 *   <a href="http://example.com/restaurants?orderby=cuisine_type&order=asc">Cuisine
+	 *   Type</a>
+	 *
+	 * @package Boone's Sortable Columns
+	 * @since 1.0
+	 *
+	 * @param str $type 'echo' if you want the result echo, 'return' if you want it returned
+	 * @param str $html_or_url 'html' if you want the entire anchor HTML, or 'url' if you just
+	 *    want the URL for the href
+	 * @return str $link The link URL or the HTML anchor object, depending on the $html_or_url
+	 *    param
+	 */
 	function the_column_next_link( $type = 'echo', $html_or_url = 'html' ) {
 		$args = array(
 			$this->get_orderby_key	=> $this->column->name,
@@ -281,6 +420,18 @@ class BBG_CPT_Sort {
 			return $link;
 	}
 	
+	/**
+	 * Gets the title text for the column header
+	 *
+	 * Essentially, this just returns the value of 'title' fed to $cols. See
+	 * BBG_CPT_Sort::__construct() for more information
+	 *
+	 * @package Boone's Sortable Columns
+	 * @since 1.0
+	 *
+	 * @param str $type 'echo' if you want the result echo, 'return' if you want it returned
+	 * @return str $class The title
+	 */
 	function the_column_title( $type = 'echo' ) {
 		$name = $this->column->title;
 		
@@ -290,6 +441,29 @@ class BBG_CPT_Sort {
 			return $name;
 	}
 	
+	/**
+	 * Constructs a <th> column header element out of the column data
+	 *
+	 * The item returned will look something like this:
+	 *   <th class="manage-column login sortable desc" scope="col">
+	 *      <a href="http://example.com/restaurants?orderby=restaurant_name&order=asc">
+	 *         <span>Restaurant Name</span>
+	 *         <span class="sorting-indicator"></span>
+	 *      </a>
+	 *   </th>
+	 *
+	 * This is intended for use in <table class="widefat"> on the WordPress Dashboard, and will
+	 * take advantage of WordPress's nice CSS and JavaScript governing the appearance and
+	 * behavior of these column headers. You can also use these <td>s in other tables (say, on
+	 * the front-end of your WordPress site), but you'll have to duplicate some of WP's core
+	 * CSS and JS if you want it to be all pretty-like.
+	 *
+	 * @package Boone's Sortable Columns
+	 * @since 1.0
+	 *
+	 * @param str $type 'echo' if you want the result echo, 'return' if you want it returned
+	 * @return str $class The <th> element
+	 */
 	function the_column_th( $type = 'echo' ) {
 		if ( $this->column->is_sortable ) {
 			$td_content = sprintf( '<a href="%1$s"><span>%2$s</span><span class="sorting-indicator"></span></a>', $this->the_column_next_link( 'return', 'url' ), $this->the_column_title( 'return' ) );
