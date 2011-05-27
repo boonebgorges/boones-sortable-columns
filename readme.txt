@@ -4,7 +4,7 @@ Tags: columns, tables, custom post types
 Requires at least: WordPress 3.1
 Tested up to: WordPress 3.2-beta
 Donate link: http://teleogistic.net/donate
-Stable tag: 1.0
+Stable tag: 1.1
 
 A handy, extensible class for adding sortable columns your custom post type lists.
 

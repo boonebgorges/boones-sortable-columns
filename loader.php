@@ -4,7 +4,7 @@
 Plugin Name: Boone's Sortable Columns
 Plugin URI: http://github.com/boonebgorges/boones-sortable-columns
 Description: A handy, extensible sortable tables class for WordPress custom post type lists (or other kinds of content)
-Version: 1.0
+Version: 1.1
 Author: Boone B Gorges
 Author URI: http://boonebgorges.com
 Donate link: http://teleogistic.net/donate
