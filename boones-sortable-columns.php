@@ -259,8 +259,10 @@ class BBG_CPT_Sort {
 	 *
 	 * In some cases, you may want to use a special URL for this purpose. For instance, you may 
 	 * want to remove certain query argument. In this function, I assume that you *always* want
-	 * to remove _wpnonce, since that should be generated on the fly. If you want to remove
-	 * additional query arguments (such as those used to generate success messages, etc), filter
+	 * to remove _wpnonce, since that should be generated on the fly. I also assume that when 
+	 * a column is resorted, pagination should be reset (thus the presence of 'paged' and
+	 * 'per_page' on the blacklist). If you want to remove additional query arguments (such as
+	 * those used to generate success messages, etc), filter 
 	 * boones_sortable_columns_keys_to_remove.
 	 *
 	 * You can also override this behavior by feeding your own custom value to the method,
@@ -280,7 +282,8 @@ class BBG_CPT_Sort {
 			
 			// These are keys that will always be removed from the base url
 			$keys_to_remove = apply_filters( 'boones_sortable_columns_keys_to_remove', array(
-				'_wpnonce'
+				'_wpnonce',
+				'paged'
 			) );
 		
 			foreach( $keys_to_remove as $key ) {
