@@ -55,5 +55,8 @@ or
 
 == Changelog == 
 
+= 1.1 =
+* Adds setup_base_url() method, for greater control over how column header URLs are generated
+
 = 1.0 =
 * Initial release

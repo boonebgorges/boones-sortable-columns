@@ -33,6 +33,11 @@ class BBG_CPT_Sort {
 	var $sortable_keys;
 	
 	/**
+	 * The URL used as a base for concatenating links
+	 */
+	var $base_url;
+	
+	/**
 	 * PHP 4 constructor
 	 *
 	 * @package Boone's Sortable Columns
@@ -150,6 +155,9 @@ class BBG_CPT_Sort {
 		
 		// Set up the next orders (asc or desc) depending on current state
 		$this->setup_next_orders();
+	
+		// Set up the URL to be used as a base for href links
+		$this->setup_base_url();
 	}
 	
 	/**
@@ -239,6 +247,48 @@ class BBG_CPT_Sort {
 			
 			$this->columns[$name]->next_order = $next_order;
 		}
+	}
+	
+	/**
+	 * Set the base url that will be used for creating links
+	 *
+	 * By default, Boone's Sortable Columns will use your current URL as the base for creating
+	 * the clickable headers. (To be more specific, it uses add_query_arg() with a null value
+	 * for the query/url param, so that it defaults to $_SERVER['REQUEST_URI']. See 
+	 * add_query_arg() for more details.)
+	 *
+	 * In some cases, you may want to use a special URL for this purpose. For instance, you may 
+	 * want to remove certain query argument. In this function, I assume that you *always* want
+	 * to remove _wpnonce, since that should be generated on the fly. If you want to remove
+	 * additional query arguments (such as those used to generate success messages, etc), filter
+	 * boones_sortable_columns_keys_to_remove.
+	 *
+	 * You can also override this behavior by feeding your own custom value to the method,
+	 * immediately after instantiating the class. For example,
+	 *   $sortable = new BBG_CPT_Sort( $cols );
+	 *   $sortable->setup_base_url( 'http://example.com' );
+	 * Or, of course, you can override the method in your own class.
+	 *
+	 * @package Boone's Sortable Columns
+	 * @since 1.0.1
+	 *
+	 * @param str $url The base URL. Optional. Defaults to $_SERVER['REQUEST_URI'].
+	 */
+	function setup_base_url( $url = false ) {
+		if ( !$url ) {
+			$current_keys = array_keys( $_GET );
+			
+			// These are keys that will always be removed from the base url
+			$keys_to_remove = apply_filters( 'boones_sortable_columns_keys_to_remove', array(
+				'_wpnonce'
+			) );
+		
+			foreach( $keys_to_remove as $key ) {
+				$url = remove_query_arg( $key, $url );
+			}
+		}
+		
+		$this->base_url = $url;
 	}
 	
 	/**
@@ -392,7 +442,7 @@ class BBG_CPT_Sort {
 			$this->get_order_key	=> $this->column->next_order
 		);
 		
-		$url = add_query_arg( $args );
+		$url = add_query_arg( $args, $this->base_url );
 		
 		// Assemble the html link, if necessary
 		if ( 'html' == $html_or_url ) {
